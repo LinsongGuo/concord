@@ -32,6 +32,7 @@ uint8_t finish_dispatcher = 0;
 __thread int concord_preempt_now = 0;
 __thread uint64_t concord_start_time;
 volatile int * cpu_preempt_point;
+unsigned long long preempt_cnt = 0;
 
 int concord_timer_reset = 0;
 int concord_lock_counter = 0;
@@ -97,6 +98,7 @@ void concord_func() {
 
     // printf("concord_func\n");
     concord_preempt_now = 0;
+    preempt_cnt++;
 
     return;
 }
@@ -183,6 +185,7 @@ void *dispatcher() {
     return NULL;
 }
 
+uint64_t start_all, end_all;
 void before_main(void) __attribute__((constructor));
 
 void before_main(void)
@@ -195,11 +198,20 @@ void before_main(void)
 	CPU_ZERO(&mask);
 	CPU_SET(4, &mask);
 	sched_setaffinity(0, sizeof(mask), &mask);
+
+    start_all = __rdtsc();
 }
 
 void after_main(void) __attribute((destructor));
 
 void after_main(void)
 {
+    end_all = __rdtsc();
+
     concord_unregister_dispatcher();
+    
+    uint64_t exe = (end_all - start_all) / 1000 / GHz;
+    printf("exe: %llu us\n", exe);
+    printf("preemptions: %d\n", preempt_cnt);
+    printf("%.2f us per preemption\n", 1.0 * exe / preempt_cnt);
 }

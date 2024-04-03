@@ -176,28 +176,28 @@ namespace
             while (!worklist.empty()) {
               Loop* currentLoop = worklist.front();
 
-              int cnt = loopBodyUnrollSize / estimateLoopBodySize(currentLoop, LI);
+              // int cnt = loopBodyUnrollSize / estimateLoopBodySize(currentLoop, LI);
 
-              UnrollLoopOptions ULO{
-                .AllowRuntime = true,
-                .AllowExpensiveTripCount = true,
-                .UnrollRemainder = true,
-              };
-              ULO.Count = cnt;
+              // UnrollLoopOptions ULO{
+              //   .AllowRuntime = true,
+              //   .AllowExpensiveTripCount = true,
+              //   .UnrollRemainder = true,
+              // };
+              // ULO.Count = cnt;
 
-              AssumptionCache* AC = &getAnalysis<AssumptionCacheTracker>(F).getAssumptionCache(F);
+              // AssumptionCache* AC = &getAnalysis<AssumptionCacheTracker>(F).getAssumptionCache(F);
 
-              LoopUnrollResult result = UnrollLoop(currentLoop, ULO, &LI, &SE, &getAnalysis<DominatorTreeWrapperPass>(F).getDomTree(), AC, nullptr, true);
+              // LoopUnrollResult result = UnrollLoop(currentLoop, ULO, &LI, &SE, &getAnalysis<DominatorTreeWrapperPass>(F).getDomTree(), AC, nullptr, true);
 
-              if (result == LoopUnrollResult::PartiallyUnrolled) {
-                errs() << "Loop partially unrolled \n";
-              }
-              else if (result == LoopUnrollResult::FullyUnrolled) {
-                errs() << "Loop fully unrolled \n";
-              }
-              else {
-                errs() << "Loop not unrolled \n";
-              }
+              // if (result == LoopUnrollResult::PartiallyUnrolled) {
+              //   errs() << "Loop partially unrolled \n";
+              // }
+              // else if (result == LoopUnrollResult::FullyUnrolled) {
+              //   errs() << "Loop fully unrolled \n";
+              // }
+              // else {
+              //   errs() << "Loop not unrolled \n";
+              // }
 
               worklist.pop();
 
@@ -206,6 +206,9 @@ namespace
               }
 
               instrumentLoop(currentLoop, F, M, LI, demangledFuncName);
+              
+              if (demangledFuncName == "CreateBlockedMatrix2" || demangledFuncName == "Partition" || demangledFuncName == "FactorLLDomain")
+                break;
 
               if (modifiedSubLoops != 0) {
                 for (Loop::iterator SL = currentLoop->begin(), SLEnd = currentLoop->end(); SL != SLEnd; ++SL) {
@@ -213,6 +216,9 @@ namespace
                     worklist.push(*SL);
                     subLoopCounter++;
                   }
+                  // else {
+                  //   break;
+                  // }
                 }
               }
             }

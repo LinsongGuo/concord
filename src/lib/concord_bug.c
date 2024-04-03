@@ -14,11 +14,11 @@
 #include <unistd.h>
 #include <x86intrin.h>
 
-#define DISPATCHER_CORE 2
+#define DISPATCHER_CORE 4
 #define PAGE_SIZE 4096
 
 #define FUNC_ACTION CONCORD_ACT_NONE
-#define PIN_DISPATCHER 1
+#define PIN_DISPATCHER 0
 
 #ifndef ACCURACY_TEST
 __thread uint64_t concord_preempt_after_cycle = 8600000000000000;
@@ -31,7 +31,6 @@ uint8_t finish_dispatcher = 0;
 
 __thread int concord_preempt_now = 0;
 __thread uint64_t concord_start_time;
-volatile int * cpu_preempt_point;
 
 int concord_timer_reset = 0;
 int concord_lock_counter = 0;
@@ -95,9 +94,6 @@ void concord_func() {
     mmap_file[concord_timestamps_counter++] = concord_start_time;
 #endif
 
-    // printf("concord_func\n");
-    concord_preempt_now = 0;
-
     return;
 }
 
@@ -148,12 +144,10 @@ void __attribute__((optimize("O0"))) initial_setup() {
 
 #define GHz 2
 void *dispatcher() {
-    // printf("-----------------------------dispatcher starts\n");
     uint64_t last_time;
 
     while (1) {
-        // while (concord_preempt_now) {
-        while (*cpu_preempt_point) {
+        while (concord_preempt_now) {
             asm volatile("nop");
         }
     timer:
@@ -170,8 +164,7 @@ void *dispatcher() {
             }
         };
 
-        // concord_preempt_now = 1;
-        *cpu_preempt_point = 1;
+        concord_preempt_now = 1;
 
         if (unlikely(finish_dispatcher == 1)) {
             break;
@@ -181,25 +174,4 @@ void *dispatcher() {
     printf("Dispatcher finished\n");
 
     return NULL;
-}
-
-void before_main(void) __attribute__((constructor));
-
-void before_main(void)
-{
-    cpu_preempt_point = &concord_preempt_now;
-
-    concord_register_dispatcher();
-
-    cpu_set_t mask;
-	CPU_ZERO(&mask);
-	CPU_SET(4, &mask);
-	sched_setaffinity(0, sizeof(mask), &mask);
-}
-
-void after_main(void) __attribute((destructor));
-
-void after_main(void)
-{
-    concord_unregister_dispatcher();
 }
