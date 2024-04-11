@@ -32,6 +32,7 @@ uint8_t finish_dispatcher = 0;
 __thread int concord_preempt_now = 0;
 __thread uint64_t concord_start_time;
 volatile int * cpu_preempt_point;
+unsigned long long preempt_recv = 0;
 
 int concord_timer_reset = 0;
 int concord_lock_counter = 0;
@@ -97,7 +98,7 @@ void concord_func() {
 
     // printf("concord_func\n");
     concord_preempt_now = 0;
-
+    preempt_recv++;
     return;
 }
 
@@ -202,4 +203,6 @@ void after_main(void) __attribute((destructor));
 void after_main(void)
 {
     concord_unregister_dispatcher();
+
+    printf("%d preemption received\n", preempt_recv);
 }
