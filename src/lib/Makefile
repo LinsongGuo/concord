@@ -14,9 +14,10 @@ endif
 # Set the variable based on the argument
 ifeq ($(firstword $(MAKECMDGOALS)),uintr)
     preempt_option := -DUINTR -muintr
-endif
-ifeq ($(firstword $(MAKECMDGOALS)),concord)
+	notpreempt_option := -DNOTPREEMPT -DUINTR -muintr
+else ifeq ($(firstword $(MAKECMDGOALS)),concord)
     preempt_option := -DCONCORD
+	notpreempt_option := -DNOTPREEMPT -DCONCORD
 endif
 
 uintr: all
@@ -49,7 +50,7 @@ concord_pthread.o: concord.c
 	$(CC) $(CFLAGS) -DPATH=\"${LOG_FILE}\" -c concord.c $(preempt_option) -DPTHREAD_SUPPORT -o concord_pthread.o 
 
 concord_base.o: concord.c
-	$(CC) $(CFLAGS) -DPATH=\"${LOG_FILE}\" -c concord.c -o concord_base.o 
+	$(CC) $(CFLAGS) -DPATH=\"${LOG_FILE}\" -c concord.c $(notpreempt_option) -o concord_base.o 
 
 clean:
 	$(RM) *.o *.a

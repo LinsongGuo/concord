@@ -173,7 +173,7 @@ void __attribute__((optimize("O0"))) initial_setup() {
 extern void nop100();
 
 #define GHz 2
-#define quantum 5000
+#define quantum 50000000
 // #define quantum 10000
 
 void *dispatcher() {
@@ -194,6 +194,7 @@ void *dispatcher() {
             if (preempt_state_perthread[i] == DEAD)
                 continue;
 
+#ifndef NOTPREEMPT
 #ifdef UINTR
             if (preempt_state_perthread[i] == UNREADY) {
                 uipi_index[i] = uintr_register_sender(uintr_fd[i], 0);
@@ -201,17 +202,20 @@ void *dispatcher() {
                 // printf("uipi_index %d : %d\n", i, uipi_index[i]);
             }
 #endif
+#endif
 
             // if (*(cpu_preempt_point[i]) == 1)
             //     continue;
 
             preempt_sent_perthread[i]++;
 
+#ifndef NOTPREEMPT
 #ifdef CONCORD
             *(cpu_preempt_point[i]) = 1;
 #elif UINTR
             _senduipi(uipi_index[i]);
             // asm volatile("senduipi %0" : : "rm" (uipi_index[i]));
+#endif
 #endif
 
             nop100();
@@ -297,14 +301,15 @@ void *new_routine(void *ra) {
 
     return res;
 }
+#endif
 
 extern int __real_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*routine)(void *), void *arg);
 int __wrap_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*routine)(void *), void *arg) {
-// #ifndef PTHREAD_SUPPORT
+#ifndef PTHREAD_SUPPORT
     // printf("__wrap_pthread_create\n");
-    // return __real_pthread_create(thread, attr, routine, arg);
+    return __real_pthread_create(thread, attr, routine, arg);
 
-// #else
+#else
     if (!__pthread_init)
         return __real_pthread_create(thread, attr, routine, arg);
 
@@ -315,9 +320,9 @@ int __wrap_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(
     ra->arg = arg;
 
     return __real_pthread_create(thread, attr, new_routine, ra);
-// #endif
-}
 #endif
+}
+// #endif
 
 void preempt_init_dispatcher() {
     __pthread_init = 1;
@@ -336,9 +341,9 @@ void before_main(void)
     concord_register_dispatcher();
 
     preempt_init_dispatcher();
-#if defined(UINTR) || defined (CONCORD)
+// #ifndef NOTPREEMPT
     preempt_init_perthread();
-#endif
+// #endif
     // cpu_set_t mask;
 	// CPU_ZERO(&mask);
 	// CPU_SET(4, &mask);
@@ -349,9 +354,9 @@ void after_main(void) __attribute((destructor));
 
 void after_main(void)
 {
-#if defined(UINTR) || defined (CONCORD)
     concord_unregister_dispatcher();
 
+#ifndef NOTPREEMPT
     int i;
     for (i = 0; i < preempt_thread_num; ++i) {
         printf("Thread %d: %llu sent, %llu received\n", i, preempt_sent_perthread[i], preempt_recv_perthread[i]);
