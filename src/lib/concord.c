@@ -173,7 +173,7 @@ void __attribute__((optimize("O0"))) initial_setup() {
 extern void nop100();
 
 #define GHz 2
-#define quantum 50000000
+#define quantum 5000
 // #define quantum 10000
 
 void *dispatcher() {
@@ -282,7 +282,7 @@ void preempt_destory_perthread() {
 }
 #endif
 
-#ifdef PTHREAD_SUPPORT
+// #ifdef PTHREAD_SUPPORT
 struct routine_arg_t {
     void *(*routine)(void *);
     void *arg;
@@ -291,25 +291,29 @@ void *new_routine(void *ra) {
     void *(*routine)(void *) = ((struct routine_arg_t *)ra)->routine;
     void *arg = ((struct routine_arg_t *)ra)->arg;
 
+#ifdef PTHREAD_SUPPORT
     preempt_init_perthread();
-    
+#endif
+
     void* res = routine(arg);
 
+#ifdef PTHREAD_SUPPORT
     preempt_destory_perthread();
+#endif
 
     free((struct routine_arg_t*)ra);
 
     return res;
 }
-#endif
+// #endif
 
 extern int __real_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*routine)(void *), void *arg);
 int __wrap_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*routine)(void *), void *arg) {
-#ifndef PTHREAD_SUPPORT
-    // printf("__wrap_pthread_create\n");
-    return __real_pthread_create(thread, attr, routine, arg);
+// #ifndef PTHREAD_SUPPORT
+//     // printf("__wrap_pthread_create\n");
+//     return __real_pthread_create(thread, attr, routine, arg);
 
-#else
+// #else
     if (!__pthread_init)
         return __real_pthread_create(thread, attr, routine, arg);
 
@@ -320,7 +324,7 @@ int __wrap_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(
     ra->arg = arg;
 
     return __real_pthread_create(thread, attr, new_routine, ra);
-#endif
+// #endif
 }
 // #endif
 
