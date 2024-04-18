@@ -113,7 +113,7 @@ void concord_func() {
 
     // printf("concord_func\n");
     concord_preempt_now = 0;
-    preempt_recv_perthread[preempt_thread_id]++;
+    ++preempt_recv_perthread[preempt_thread_id];
 
     return;
 }
@@ -173,7 +173,7 @@ void __attribute__((optimize("O0"))) initial_setup() {
 extern void nop100();
 
 #define GHz 2
-#define quantum 5000
+#define quantum 50000
 // #define quantum 10000
 
 void *dispatcher() {

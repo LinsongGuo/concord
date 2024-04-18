@@ -205,16 +205,25 @@ namespace
                 continue;
               }
 
+              // if (demangledFuncName == "jacobcalc")
+              //   break;
+
               instrumentLoop(currentLoop, F, M, LI, demangledFuncName);
               
-              if (demangledFuncName == "CreateBlockedMatrix2" || demangledFuncName == "Partition" || demangledFuncName == "FactorLLDomain")
+              if (demangledFuncName == "CreateBlockedMatrix2" || demangledFuncName == "Partition" || demangledFuncName == "FactorLLDomain")// || demangledFuncName == "slave" || demangledFuncName == "slave2" || demangledFuncName == "link_all")
+                break;
+
+              if (demangledFuncName == "HJM_SimPath_Forward_Blocking(double**, int, int, double, double*, double*, double**, long*, int)") 
                 break;
 
               if (modifiedSubLoops != 0) {
                 for (Loop::iterator SL = currentLoop->begin(), SLEnd = currentLoop->end(); SL != SLEnd; ++SL) {
                   if (subLoopCounter < modifiedSubLoops) {
+                  // errs() << demangledFuncName << ' ' << (demangledFuncName != "gaussj(double**, int, double**, int)") << ' ' << subLoopCounter << "\n";
+                  //if (demangledFuncName != "gaussj(double**, int, double**, int)" || subLoopCounter < 2) {
                     worklist.push(*SL);
                     subLoopCounter++;
+                  //}
                   }
                   // else {
                   //   break;
