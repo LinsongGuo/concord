@@ -128,6 +128,13 @@ struct ConcordPass : public ModulePass {
             if (status == 0) {
                 demangledFuncName = demangled;
             }
+            
+            if (demangledFuncName.find("read_json_") != std::string::npos) {
+                continue;
+            }
+            if (demangledFuncName.find("read_csv_") != std::string::npos) {
+                continue;
+            }
 
             if (std::find(visitedFunctions.begin(), visitedFunctions.end(), demangledFuncName) !=
                 visitedFunctions.end()) {
