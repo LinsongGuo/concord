@@ -7,7 +7,7 @@ ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 LOG_FILE:=${ROOT_DIR}/concord_timestamps.log
 
 # Check if an argument is provided
-ifeq ($(filter uintr concord clean,$(firstword $(MAKECMDGOALS))),)
+ifeq ($(filter uintr concord signal clean,$(firstword $(MAKECMDGOALS))),)
     $(error Invalid argument. Please use 'make uint' or 'make concord')
 endif
 
@@ -15,6 +15,9 @@ endif
 ifeq ($(firstword $(MAKECMDGOALS)),uintr)
     preempt_option := -DUINTR -muintr
 	notpreempt_option := -DNOTPREEMPT -DUINTR -muintr
+else ifeq ($(firstword $(MAKECMDGOALS)),signal)
+    preempt_option := -DSIGNAL
+	notpreempt_option := -DNOTPREEMPT -DSIGNAL
 else ifeq ($(firstword $(MAKECMDGOALS)),concord)
     preempt_option := -DCONCORD
 	notpreempt_option := -DNOTPREEMPT -DCONCORD
@@ -25,6 +28,9 @@ uintr: all
 
 concord: all
 	@echo "Building with option concord"
+
+signal: all
+	@echo "Building with option signal"
 
 all: clean concord.a concord_accuracy.a concord_pthread.a concord_base.a
 

@@ -14,6 +14,10 @@
 #include <unistd.h>
 #include <x86intrin.h>
 
+#ifdef SIGNAL
+#include <signal.h>
+#endif
+
 #ifndef __NR_uintr_register_handler
 #define __NR_uintr_register_handler	471
 #define __NR_uintr_unregister_handler	472
@@ -33,6 +37,7 @@
 #define DISPATCHER_CORE 2
 #define PAGE_SIZE 4096
 #define FUNC_ACTION CONCORD_ACT_NONE
+// #define FUNC_ACTION CONCORD_ACT_LOG
 #define PIN_DISPATCHER 1
 
 pthread_t dispatcher_thread;
@@ -63,13 +68,18 @@ __thread uint64_t concord_start_time;
 int uintr_fd[MAX_THREAD_NUM];
 int uipi_index[MAX_THREAD_NUM];
 
+#ifdef SIGNAL
+pthread_t pthread_id[MAX_THREAD_NUM];
+#endif
+
 int concord_timer_reset = 0;
 int concord_lock_counter = 0;
 
 void *dispatcher();
 void initial_setup();
 
-uint64_t concord_timestamps[1000000];
+#define LOGLEN 4000000
+uint64_t concord_timestamps[LOGLEN];
 uint64_t concord_timestamps_counter = 0;
 uint64_t concord_timestamp_break_flag = 0;
 
@@ -78,19 +88,19 @@ unsigned long long *mmap_file;
 void measurement_init() {
     FILE *fp = fopen(PATH, "w+");
     if (fp == 0) assert(0 && "fopen failed");
-    fseek(fp, (1000000 * sizeof(long)) - 1, SEEK_SET);
+    fseek(fp, (LOGLEN * sizeof(long)) - 1, SEEK_SET);
     fwrite("", 1, sizeof(char), fp);
     fflush(fp);
     fclose(fp);
 
     int fd = open(PATH, O_RDWR);
     if (fd < 0) assert(0 && "open failed");
-    mmap_file = (long long *)mmap(NULL, 1000000 * sizeof(long long), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    mmap_file = (long long *)mmap(NULL, LOGLEN * sizeof(long long), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (mmap_file == MAP_FAILED) assert(0 && "mmap failed");
     close(fd);
     long gap = PAGE_SIZE / sizeof(long long);
     // Touch each page to load them to the TLB.
-    for (long i = 0; i < 1000000; i += gap) mmap_file[i] = 0;
+    for (long i = 0; i < LOGLEN; i += gap) mmap_file[i] = 0;
 }
 
 int first_time_init = 1;
@@ -124,6 +134,12 @@ void __attribute__ ((interrupt))
 		unsigned long long vector) {
     ++preempt_recv_perthread[vector];
 }
+
+#ifdef SIGNAL
+void signal_handler(int signum) {
+    ++preempt_recv_perthread[preempt_thread_id];
+}
+#endif
 
 void concord_register_dispatcher() {
     // printf("Registering concord dispatcher\n");
@@ -173,10 +189,20 @@ void __attribute__((optimize("O0"))) initial_setup() {
 extern void nop100();
 
 #define GHz 2
-#define quantum 50000
-// #define quantum 10000
+#define quantum 2000
 
 void *dispatcher() {
+#ifdef SIGNAL
+    struct sigaction action;
+    action.sa_handler = signal_handler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+    if (sigaction(SIGUSR1, &action, NULL) != 0) {
+        printf("signal handler registeration failed\n");
+        exit(-1);
+    }
+#endif
+
     // printf("-----------------------------dispatcher starts\n");
     uint64_t last_time = __rdtsc();
 
@@ -214,7 +240,8 @@ void *dispatcher() {
             *(cpu_preempt_point[i]) = 1;
 #elif UINTR
             _senduipi(uipi_index[i]);
-            // asm volatile("senduipi %0" : : "rm" (uipi_index[i]));
+#elif SIGNAL
+            pthread_kill(pthread_id[i], SIGUSR1);
 #endif
 #endif
 
@@ -277,6 +304,25 @@ void preempt_init_perthread() {
 
 void preempt_destory_perthread() {
     // printf("uintr preempt_destory_perthread: %d\n", preempt_thread_id);
+    mb();
+    preempt_state_perthread[preempt_thread_id] = DEAD;
+}
+#elif defined(SIGNAL)
+void preempt_init_perthread() {
+    // printf("signal preempt_init_perthread: %d\n", preempt_thread_num);
+
+    preempt_thread_id = preempt_thread_num;
+    preempt_state_perthread[preempt_thread_id] = READY;
+    preempt_recv_perthread[preempt_thread_id] = 0;
+    
+    pthread_id[preempt_thread_id] = pthread_self();
+
+    mb();
+    preempt_thread_num++;
+}
+
+void preempt_destory_perthread() {
+    // printf("signal preempt_destory_perthread: %d\n", preempt_thread_id);
     mb();
     preempt_state_perthread[preempt_thread_id] = DEAD;
 }
