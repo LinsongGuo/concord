@@ -136,6 +136,16 @@ struct ConcordPass : public ModulePass {
 
             visitedFunctions.push_back(demangledFuncName);
 
+            if (demangledFuncName.find("Repairer::Run()") != std::string::npos) {
+                continue;
+            }
+            if (demangledFuncName.find("VersionStorageInfo") != std::string::npos) {
+                continue;
+            }
+            if (demangledFuncName.find("SerializeSingleOptionHelper") != std::string::npos) {
+                continue;
+            }
+
             // Instrument function
             // instrumentFunction(F, M, demangledFuncName);
 
@@ -153,9 +163,9 @@ struct ConcordPass : public ModulePass {
                     Loop *currentLoop = worklist.front();
                     worklist.pop();
 
-                    if (SE.getSmallConstantTripCount(currentLoop) > 0 && disableBoundedLoops) {
-                        continue;
-                    }
+                    // if (SE.getSmallConstantTripCount(currentLoop) > 0 && disableBoundedLoops) {
+                    //     continue;
+                    // }
 
                     instrumentLoop(currentLoop, F, M, LI, demangledFuncName);
 
