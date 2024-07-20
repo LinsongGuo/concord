@@ -190,6 +190,7 @@ extern void nop100();
 
 #define GHz 2
 #define quantum 2000
+int preempt_overhead = 0;
 
 void *dispatcher() {
 #ifdef SIGNAL
@@ -207,7 +208,7 @@ void *dispatcher() {
     uint64_t last_time = __rdtsc();
 
     while (1) {
-        while (__rdtsc() - last_time < quantum*GHz) {
+        while (__rdtsc() - last_time < (quantum+preempt_overhead)*GHz) {
             asm volatile("nop");
             asm volatile("nop");
             asm volatile("nop");
@@ -387,6 +388,12 @@ void before_main(void) __attribute__((constructor));
 
 void before_main(void)
 {
+#ifdef UINTR
+    preempt_overhead = 400;
+#elif SIGNAL
+    preempt_overhead = 2400;
+#endif
+
     // printf("---- before_main\n");
     concord_register_dispatcher();
 
