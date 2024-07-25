@@ -201,15 +201,18 @@ namespace
 
               worklist.pop();
 
-              if (SE.getSmallConstantTripCount(currentLoop) > 0 && disableBoundedLoops) {
-                continue;
-              }
+              // if (SE.getSmallConstantTripCount(currentLoop) > 0 && disableBoundedLoops) {
+              //   continue;
+              // }
 
               // if (demangledFuncName == "jacobcalc")
               //   break;
 
               instrumentLoop(currentLoop, F, M, LI, demangledFuncName);
               
+              if (demangledFuncName == "slave" || demangledFuncName == "slave2" || demangledFuncName == "link_all" || demangledFuncName == "Render_Loop") 
+                break;
+
               if (demangledFuncName == "CreateBlockedMatrix2" || demangledFuncName == "Partition" || demangledFuncName == "FactorLLDomain")// || demangledFuncName == "slave" || demangledFuncName == "slave2" || demangledFuncName == "link_all")
                 break;
 

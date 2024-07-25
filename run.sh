@@ -2,8 +2,7 @@
 
 mode=$1
 
-quantum=(200 100 50 30 20 15 10 5 2)
-# quantum=(2)
+quantum=(200 100 50 30 20 15 10 5 3)
 
 if [ $mode == "uintr" ] || [ $mode == "concord" ] || [ $mode == "signal" ]; then
     echo "Argument is 'uintr' or 'concord' or 'signal'"
@@ -19,7 +18,7 @@ do
     
     pushd src/lib
     ns=$((q * 1000))
-    sed -i "192s/.*/#define quantum ${ns}/" concord.c 
+    sed -i "189s/.*/#define quantum ${ns}/" concord.c 
     make $mode
     popd
 

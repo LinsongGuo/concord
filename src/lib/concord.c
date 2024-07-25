@@ -78,7 +78,7 @@ int concord_lock_counter = 0;
 void *dispatcher();
 void initial_setup();
 
-#define LOGLEN 4000000
+#define LOGLEN 10000000
 uint64_t concord_timestamps[LOGLEN];
 uint64_t concord_timestamps_counter = 0;
 uint64_t concord_timestamp_break_flag = 0;
@@ -104,21 +104,18 @@ void measurement_init() {
 }
 
 int first_time_init = 1;
-int concord_enable_log = 1;
 
 void concord_func() {
-#if FUNC_ACTION == CONCORD_ACT_LOG
-    if (unlikely(!concord_enable_log)) {
-        return;
-    }
-
+// #if FUNC_ACTION == CONCORD_ACT_LOG
+#ifdef ACCURACY_TEST
     if (unlikely(first_time_init)) {
         measurement_init();
         first_time_init = 0;
     }
 
     concord_start_time = __rdtsc();
-    mmap_file[concord_timestamps_counter++] = concord_start_time;
+    if (concord_timestamps_counter < LOGLEN)
+        mmap_file[concord_timestamps_counter++] = concord_start_time;
 #endif
 
     // printf("concord_func\n");
@@ -189,7 +186,7 @@ void __attribute__((optimize("O0"))) initial_setup() {
 extern void nop100();
 
 #define GHz 2
-#define quantum 2000
+#define quantum 5000
 int preempt_overhead = 0;
 
 void *dispatcher() {
@@ -394,17 +391,11 @@ void before_main(void)
     preempt_overhead = 2400;
 #endif
 
-    // printf("---- before_main\n");
     concord_register_dispatcher();
 
     preempt_init_dispatcher();
-// #ifndef NOTPREEMPT
+
     preempt_init_perthread();
-// #endif
-    // cpu_set_t mask;
-	// CPU_ZERO(&mask);
-	// CPU_SET(4, &mask);
-	// sched_setaffinity(0, sizeof(mask), &mask);
 }
 
 void after_main(void) __attribute((destructor));

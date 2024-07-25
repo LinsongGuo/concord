@@ -6,4 +6,4 @@ export CONCORD_LIB_PATH=$CONCORD_DIR_PATH/src/lib
 export CONCORD_TIMESTAMP_PATH=$CONCORD_DIR_PATH/src/lib/concord_timestamps.log
 export CONCORD_RDTSC_PASS=$CONCORD_SRC_PASS/rdtsc-pass/build/src/libConcordPass.so
 export CONCORD_CACHE_LINE_PASS=$CONCORD_SRC_PASS/cache-line-pass/build/src/libConcordPass.so
-export CNC_LLC=llc-9
+export CNC_LLC=llc-11
