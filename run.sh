@@ -11,6 +11,12 @@ else
     exit 1  
 fi
 
+# Build cocnord/safepoint pass.
+if [ "$mode" == "concord" ]; then
+    pushd src/cache-line-pass
+    ./setup-pass.sh
+    popd
+fi
 
 for q in "${quantum[@]}"
 do
@@ -32,7 +38,7 @@ do
     rm -rf splash2/codes/splash2_stats
     rm -rf splash2/codes/results/splash2_stats-$mode-$q
 
-    python3 run.py
+    python3 run.py overhead_results-$mode.txt
 
     mv parsec-benchmark/pkgs/parsec_stats parsec-benchmark/pkgs/results/parsec_stats-$mode-$q
     mv phoenix/phoenix-2.0/phoenix_stats phoenix/phoenix-2.0/results/phoenix_stats-$mode-$q
