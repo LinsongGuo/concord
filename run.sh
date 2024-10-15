@@ -3,11 +3,12 @@
 mode=$1
 
 quantum=(200 100 50 30 20 15 10 5 3)
+# quantum=(100000000)
 
-if [ $mode == "uintr" ] || [ $mode == "concord" ] || [ $mode == "signal" ]; then
-    echo "Argument is 'uintr' or 'concord' or 'signal'"
+if [ $mode == "uintr" ] || [ $mode == "concord" ] || [ $mode == "safepoint" ] || [ $mode == "signal" ]; then
+    echo "Argument is $mode"
 else
-    echo "Argument is not 'uintr' or 'concord' or 'signal'"
+    echo "Argument is not 'uintr' or 'concord' or 'safepoint' or 'signal'"
     exit 1  
 fi
 
@@ -16,7 +17,17 @@ if [ "$mode" == "concord" ]; then
     pushd src/cache-line-pass
     ./setup-pass.sh
     popd
+elif [ "$mode" == "safepoint" ]; then
+    pushd src/cache-line-pass
+    ./setup-pass.sh safepoint
+    popd
 fi
+
+
+mkdir -p benchmarks/overhead/parsec-benchmark/pkgs/results 
+mkdir -p benchmarks/overhead/phoenix/phoenix-2.0/results
+mkdir -p benchmarks/overhead/splash2/codes/results
+
 
 for q in "${quantum[@]}"
 do
@@ -24,10 +35,13 @@ do
     
     pushd src/lib
     ns=$((q * 1000))
-    sed -i "189s/.*/#define quantum ${ns}/" concord.c 
-    make $mode
+    sed -i "189s/.*/#define quantum ${ns}/" concord.c
+    if [ "$mode" == "safepoint" ]; then
+        make concord
+    else 
+        make "$mode"
+    fi
     popd
-
 
     pushd benchmarks/overhead
     

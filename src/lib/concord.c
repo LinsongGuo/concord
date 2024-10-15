@@ -186,7 +186,7 @@ void __attribute__((optimize("O0"))) initial_setup() {
 extern void nop100();
 
 #define GHz 2
-#define quantum 5000
+#define quantum 100000000000
 int preempt_overhead = 0;
 
 void *dispatcher() {
@@ -205,7 +205,7 @@ void *dispatcher() {
     uint64_t last_time = __rdtsc();
 
     while (1) {
-        while (__rdtsc() - last_time < (quantum+preempt_overhead)*GHz) {
+        while (__rdtsc() - last_time < 1LL*(quantum+preempt_overhead)*GHz) {
             asm volatile("nop");
             asm volatile("nop");
             asm volatile("nop");

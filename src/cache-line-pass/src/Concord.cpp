@@ -16,6 +16,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/MDBuilder.h"
+#include "llvm/IR/InlineAsm.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
@@ -257,6 +258,17 @@ namespace
 
       IRBuilder<> builder(firstInst);
 
+#ifdef SAFEPOINT
+      // Insert a NOP instruction (a dummy add instruction)
+      // ConstantInt* zeroValue = ConstantInt::get(Type::getInt32Ty(M.getContext()), 0);
+      // Value* nopInst = builder.CreateAdd(zeroValue, zeroValue, "safepoint_nop");
+
+      std::string asmString = "nop";
+      FunctionType *asmFuncType = FunctionType::get(Type::getVoidTy(M.getContext()), false);
+      InlineAsm *inlineAsm = InlineAsm::get(asmFuncType, asmString, "", true); // true means 'volatile'
+
+      builder.CreateCall(inlineAsm);
+#else
       GlobalVariable* preemptNow = M.getGlobalVariable("concord_preempt_now");
 
       if (!preemptNow)
@@ -302,6 +314,7 @@ namespace
       }
 
       builder.CreateCall(concordFunc, {});
+#endif
 
       // errs() << "!+ " << demangledFuncName << " *'* " << estimatedInstCc << "\n";
       // errs() << "Loop instrumented \n";
