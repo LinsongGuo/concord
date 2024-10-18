@@ -34,7 +34,7 @@
 #define uintr_unregister_sender(ipi_idx, flags)	syscall(__NR_uintr_unregister_sender, ipi_idx, flags)
 #define uintr_wait(flags)			syscall(__NR_uintr_wait, flags)
 
-#define DISPATCHER_CORE 2
+#define DISPATCHER_CORE 0
 #define PAGE_SIZE 4096
 #define FUNC_ACTION CONCORD_ACT_NONE
 // #define FUNC_ACTION CONCORD_ACT_LOG
@@ -84,6 +84,24 @@ uint64_t concord_timestamps_counter = 0;
 uint64_t concord_timestamp_break_flag = 0;
 
 unsigned long long *mmap_file;
+
+
+#ifdef UINTR
+extern void uintr_init();
+#endif
+
+// Used when entering and exiting gem5.
+volatile int preempt_active = 0;
+void preempt_start() {
+#ifdef UINTR
+    uintr_init();
+#endif
+    mb();
+    preempt_active = 1;
+}
+void preempt_end() {
+    preempt_active = 0;
+}
 
 void measurement_init() {
     FILE *fp = fopen(PATH, "w+");
@@ -186,7 +204,7 @@ void __attribute__((optimize("O0"))) initial_setup() {
 extern void nop100();
 
 #define GHz 2
-#define quantum 100000000000
+#define quantum 5000
 int preempt_overhead = 0;
 
 void *dispatcher() {
@@ -205,6 +223,9 @@ void *dispatcher() {
     uint64_t last_time = __rdtsc();
 
     while (1) {
+        if (!preempt_active)
+            continue;
+
         while (__rdtsc() - last_time < 1LL*(quantum+preempt_overhead)*GHz) {
             asm volatile("nop");
             asm volatile("nop");
@@ -214,7 +235,8 @@ void *dispatcher() {
         last_time = __rdtsc();
 
         int i;
-        for (i = 0; i < preempt_thread_num; ++i) {
+        // for (i = 0; i < preempt_thread_num; ++i) {
+        for (i = 0; i < 1; ++i) {
             if (preempt_state_perthread[i] == DEAD)
                 continue;
 
@@ -277,6 +299,20 @@ void preempt_destory_perthread() {
 }
 
 #elif defined(UINTR)
+void uintr_init() {
+    // fprintf(stderr, "preempt_thread_id: %d\n", preempt_thread_id);
+    if (uintr_register_handler(ui_handler, 0))
+        exit(-1);
+
+    uintr_fd[preempt_thread_id] = uintr_create_fd(preempt_thread_id, 0);
+    // fprintf(stderr, "uintr_fd %d : %d\n", preempt_thread_id, uintr_fd[preempt_thread_id]);
+    if (uintr_fd[preempt_thread_id] < 0)
+        exit(-1);
+    
+    _stui();
+    // fprintf(stderr, "stui!\n");
+}
+
 void preempt_init_perthread() {
     // printf("uintr preempt_init_perthread: %d\n", preempt_thread_num);
 
@@ -284,20 +320,13 @@ void preempt_init_perthread() {
     preempt_state_perthread[preempt_thread_id] = UNREADY;
     preempt_recv_perthread[preempt_thread_id] = 0;
     
-    if (uintr_register_handler(ui_handler, 0))
-		exit(-1);
-
-	uintr_fd[preempt_thread_id] = uintr_create_fd(preempt_thread_id, 0);
-	// printf("uintr_fd %d : %d\n", preempt_thread_id, uintr_fd[preempt_thread_id]);
-    if (uintr_fd[preempt_thread_id] < 0)
-		exit(-1);
-    
-
     mb();
     preempt_thread_num++;
-
-    _stui();
-    // asm volatile("stui"); 
+    
+    // fprintf(stderr, "preempt_active: %d\n", preempt_active);
+    if (preempt_active) {
+        uintr_init();
+    }
 }
 
 void preempt_destory_perthread() {
@@ -386,16 +415,23 @@ void before_main(void) __attribute__((constructor));
 void before_main(void)
 {
 #ifdef UINTR
-    preempt_overhead = 400;
+    #ifdef SAFEPOINT 
+    preempt_overhead = 100;
+    #else
+    preempt_overhead = 360;
+    #endif
 #elif SIGNAL
     preempt_overhead = 2400;
 #endif
+
+    // fprintf(stderr, "preempt_overhead: %d\n", preempt_overhead);
 
     concord_register_dispatcher();
 
     preempt_init_dispatcher();
 
     preempt_init_perthread();
+    // printf("preempt_init_perthread ends\n");
 }
 
 void after_main(void) __attribute((destructor));
@@ -407,7 +443,7 @@ void after_main(void)
 #ifndef NOTPREEMPT
     int i;
     for (i = 0; i < preempt_thread_num; ++i) {
-        printf("Thread %d: %llu sent, %llu received\n", i, preempt_sent_perthread[i], preempt_recv_perthread[i]);
+        fprintf (stderr, "Thread %d: %llu sent, %llu received\n", i, preempt_sent_perthread[i], preempt_recv_perthread[i]);
     }
 #endif
 }

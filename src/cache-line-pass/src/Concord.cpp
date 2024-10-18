@@ -161,6 +161,10 @@ namespace
 
           visitedFunctions.push_back(demangledFuncName);
 
+          if (demangledFuncName == "main") {
+            continue;  
+          }
+  
           // Instrument function
           // instrumentFunction(F, M, demangledFuncName);
 
@@ -264,6 +268,7 @@ namespace
       // Value* nopInst = builder.CreateAdd(zeroValue, zeroValue, "safepoint_nop");
 
       std::string asmString = "nop";
+      // std::string asmString = "serialize";
       FunctionType *asmFuncType = FunctionType::get(Type::getVoidTy(M.getContext()), false);
       InlineAsm *inlineAsm = InlineAsm::get(asmFuncType, asmString, "", true); // true means 'volatile'
 

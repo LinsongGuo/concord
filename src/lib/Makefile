@@ -12,9 +12,15 @@ ifeq ($(filter uintr concord signal clean,$(firstword $(MAKECMDGOALS))),)
 endif
 
 # Set the variable based on the argument
-ifeq ($(firstword $(MAKECMDGOALS)),uintr)
+ifeq ($(firstword $(MAKECMDGOALS)),base)
+    preempt_option := -DCONCORD
+	notpreempt_option := -DNOTPREEMPT -DCONCORD
+else ifeq ($(firstword $(MAKECMDGOALS)),uintr)
     preempt_option := -DUINTR -muintr
 	notpreempt_option := -DNOTPREEMPT -DUINTR -muintr
+else ifeq ($(firstword $(MAKECMDGOALS)),safepoint)
+    preempt_option := -DUINTR -DSAFEPOINT -muintr
+	notpreempt_option := -DNOTPREEMPT -DUINTR -DSAFEPOINT -muintr
 else ifeq ($(firstword $(MAKECMDGOALS)),signal)
     preempt_option := -DSIGNAL
 	notpreempt_option := -DNOTPREEMPT -DSIGNAL

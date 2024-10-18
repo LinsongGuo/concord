@@ -30,6 +30,9 @@ void concord_lock();
 
 void concord_enable();
 void concord_disable();
+
+void preempt_start();
+void preempt_end();
 #ifdef __cplusplus
 }
 #endif
