@@ -147,7 +147,7 @@ struct ConcordPass : public ModulePass {
             }
 
             // Instrument function
-            // instrumentFunction(F, M, demangledFuncName);
+            instrumentFunction(F, M, demangledFuncName);
 
             // Get the loop info
             LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
