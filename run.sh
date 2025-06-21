@@ -3,6 +3,7 @@
 mode=$1
 
 quantum=(200 100 50 30 20 15 10 5 3)
+# quantum=(5)
 
 if [ $mode == "uintr" ] || [ $mode == "concord" ] || [ $mode == "signal" ]; then
     echo "Argument is 'uintr' or 'concord' or 'signal'"
@@ -38,7 +39,7 @@ do
     rm -rf splash2/codes/splash2_stats
     rm -rf splash2/codes/results/splash2_stats-$mode-$q
 
-    python3 run.py overhead_results-$mode.txt
+    python3 run.py $mode overhead_results-$mode.txt
 
     mv parsec-benchmark/pkgs/parsec_stats parsec-benchmark/pkgs/results/parsec_stats-$mode-$q
     mv phoenix/phoenix-2.0/phoenix_stats phoenix/phoenix-2.0/results/phoenix_stats-$mode-$q
