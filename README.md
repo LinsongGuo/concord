@@ -23,16 +23,10 @@ Other dependencies are listed in `setup.sh`. Please **review the script carefull
 You will also need input data to run the benchmarks:
 
 - For the **Phoenix** benchmark suite:  
-  Download [this](https://drive.google.com/file/d/1MbDowfcB9jSgHlOKnAuv3dtJyJrPEtUb/view?usp=share_link) into `benchmarks/overhead/phoenix`, then run:
-  ```bash
-  benchmarks/overhead/phoenix/dataset.sh
-  ```
+  Download [this](https://drive.google.com/file/d/1MbDowfcB9jSgHlOKnAuv3dtJyJrPEtUb/view?usp=share_link) into `benchmarks/overhead/phoenix`, then run `./dataset.sh` under `benchmarks/overhead/phoenix`.
 
 - For the **PARSEC** benchmark suite:  
-  Download [this](https://drive.google.com/file/d/1i6iv_kPt55wa3zUKJPtB7SAf2ALE47dM/view?usp=share_link) into `benchmarks/overhead/parsec-benchmark`, then run:
-  ```bash
-  benchmarks/overhead/parsec-benchmark/dataset.sh
-  ```
+  Download [this](https://drive.google.com/file/d/1i6iv_kPt55wa3zUKJPtB7SAf2ALE47dM/view?usp=share_link) into `benchmarks/overhead/parsec-benchmark`, then run `./dataset.sh` under `benchmarks/overhead/parsec-benchmark`
 
 ### Running Experiments
 
