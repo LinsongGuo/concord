@@ -63,6 +63,7 @@ Each result file reports slowdown (e.g., `1.1` means 10% slowdown).
   ```bash
   quantum=(200 100 50 30 20 15 10 5 3)
   ```
+  The slowdown results for these quantum values are recorded in the output file in the same order as they appear in the array.
 
 - To reduce the number of trials (at the cost of increased noise), uncomment line 60 in `benchmarks/overhead/run.py`.
 
