@@ -1,79 +1,77 @@
-# Concord: An efficient runtime for microsecond-scale applications
+The repository is forked from [dslab-epfl/concord](https://github.com/dslab-epfl/concord.git).
 
-This repository contains the source code for Concord, which was published at [SOSP'23](https://dslab.epfl.ch/pubs/concord.pdf).
-In particular, it contains a) the two LLVM passes used by Concord to automatically instrument applications and b) the implementation of the Concord runtime on the [Shinjuku](https://github.com/stanford-mast/shinjuku) dataplane OS.
+### Prerequisites
 
-## Organization
+Make sure the submodule `benchmarks/overhead` is cloned.
 
-Subdirectories have their own README files.
+Ensure that `clang-11`, `clang++-11`, and `opt-11` are installed. You can verify their availability with:
 
-* `benchmarks` - The different applications we tested Concord on and overhead measurements.
-* `concord-shinjuku` - The Concord runtime integrated into the Shinjuku dataplane OS. 
-* `figures` - Scripts to generate the figures in the paper
-* `scripts` - General scripts to run concord
-* `schedsim` - Our queueing simulator
-* `src` - LLVM passes and the Concord runtime library
-
-## Getting started
-
-Clone the repository, please make sure you have cloned via ssh, otherwise the submodules will not be cloned.
-
-```sh
-git clone --recurse-submodules git@github.com:dslab-epfl/concord.git
-cd concord
+```bash
+clang-11 --version
+clang++-11 --version
+opt-11 --version
 ```
 
-Then setup Concord, this script will build concord-cache-line, concord-rdtsc pass, and install the required dependencies.
+You might be able to install them via:
 
-```sh
-./setup.sh
+```bash
+sudo apt install llvm-11
 ```
 
+Other dependencies are listed in `setup.sh`. Please **review the script carefully** before running it to avoid overwriting existing library versions.
 
-## Simple Examples
-First run the basic examples to see cache-line and rdtsc based instrumentation in action. 
+You will also need input data to run the benchmarks:
 
-```sh
-cd benchmarks/basics
-make
+- For the **Phoenix** benchmark suite:  
+  Download [this](https://drive.google.com/file/d/1MbDowfcB9jSgHlOKnAuv3dtJyJrPEtUb/view?usp=share_link) into `benchmarks/overhead/phoenix`, then run:
+  ```bash
+  benchmarks/overhead/phoenix/dataset.sh
+  ```
+
+- For the **PARSEC** benchmark suite:  
+  Download [this](https://drive.google.com/file/d/1i6iv_kPt55wa3zUKJPtB7SAf2ALE47dM/view?usp=share_link) into `benchmarks/overhead/parsec-benchmark`, then run:
+  ```bash
+  benchmarks/overhead/parsec-benchmark/dataset.sh
+  ```
+
+### Running Experiments
+
+First, activate the environment variables:
+
+```bash
+source env.sh
 ```
 
-See the instrumentation outputs:
-```
-> Module Name: <stdin>
-> Enable instrumentation: 1
-> Modified subloops: 200
-> Disable bounded loops: 0
-Instrumenting loop in function: hello
-Instrumenting loop in function: main
-> This is declaration, skip atoi
-> This is declaration, skip puts
-> Unique loops: 0
-```
+Then run benchmarks using different preemption mechanisms:
 
-After run the programs, first run cache-line based instrumentation:
+```bash
+./run.sh uintr
+# Output: benchmarks/overhead/overhead_results-uintr.txt
 
-```sh
-./hello.out
+./run.sh concord
+# Output: benchmarks/overhead/overhead_results-concord.txt
 
-# Program Modified !! 
-# Hello, world!
+./run.sh signal
+# Output: benchmarks/overhead/overhead_results-signal.txt
 ```
 
-Then run rdtsc based instrumentation, it will print the number of cycles between two `concord_rdtsc_func` calls.
+Each result file reports slowdown (e.g., `1.1` means 10% slowdown).
 
-```sh
-./hello_rdtsc.out
-# 16070
-# 16054
-# 16060
-# 16056
-# 16060
-# 16056
-# 16060
-# 16056
-# 16060
-# ...
-```
+### Notes
 
-To run more complex examples, including the entire runtime on Shinjuku, please refer to the README within the `concord-shinjuku` directory. 
+- You can adjust the evaluted quantum values in `run.sh` line 5:
+  ```bash
+  quantum=(200 100 50 30 20 15 10 5 3)
+  ```
+
+- To reduce the number of trials (at the cost of increased noise), uncomment line 60 in `benchmarks/overhead/run.py`.
+
+- Core usage is hardcoded and may vary depending on the specific machine:
+  - Timer core: `src/lib/concord.c`, line 37  
+    ```c
+    #define DISPATCHER_CORE 2
+    ```
+  - Program cores for PARSEC benchmarks:  
+    `benchmarks/overhead/parsec-benchmark/pkgs/perf_test.sh`, line 78  
+  - Program cores for Phoenix benchmarks:  
+    `benchmarks/overhead/phoenix/phoenix-2.0/perf_test.sh`, line 58
